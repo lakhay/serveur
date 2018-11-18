@@ -1,0 +1,207 @@
+version: "3.6"
+services:
+
+
+#Admin
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    restart: always
+    command: -H unix:///var/run/docker.sock
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${USERDIR}/docker/portainer/data:/data
+      - ${USERDIR}/docker/shared:/shared
+    environment:
+      - TZ=${TZ}
+
+  watchtower:
+    container_name: watchtower
+    restart: always
+    image: v2tec/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --schedule "0 0 4 * * *" --cleanup
+
+#Downloaders
+  sabnzbd:
+    image: "linuxserver/sabnzbd"
+    container_name: "sabnzbd"
+    volumes:
+      - ${USERDIR}/docker/sabnzbd:/config
+      - ${USERDIR}/stockage1/completed:/downloads
+      - ${USERDIR}/stockage1/incomplete:/incomplete-downloads
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+        - "8080:8080"
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+  deluge:
+    image: linuxserver/deluge
+    container_name: deluge
+    restart: always
+    volumes:
+      - ${USERDIR}/stockage1/completed:/downloads
+#Bien mettre "/downloads" comme chemin de téléchargement dans les options
+      - ${USERDIR}/docker/deluge:/config
+    ports:
+      - "8112:8112"
+      - "58846:58846"
+      - "58946:58946"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+#Indexers
+  hydra:
+    image: "linuxserver/hydra"
+    container_name: "hydra"
+    volumes:
+      - ${USERDIR}/docker/hydra:/config
+      - ${USERDIR}/stockage1/completed:/downloads
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+      - "5075:5075"
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ} 
+      
+  jackett:
+    image: "linuxserver/jackett"
+    container_name: "jackett"
+    volumes:
+      - ${USERDIR}/docker/jackett:/config
+      - ${USERDIR}/stockage1/completed:/downloads
+      - "/etc/localtime:/etc/localtime:ro"
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+      - "9117:9117"
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      
+#Automatisation
+  radarr:
+    image: "linuxserver/radarr"
+    container_name: "radarr"
+    volumes:
+      - ${USERDIR}/docker/radarr:/config
+      - ${USERDIR}/stockage1/completed:/downloads
+      - ${USERDIR}/stockage1/Film:/movies
+      - "/etc/localtime:/etc/localtime:ro"
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+      - "7878:7878"
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      
+  sonarr:
+    image: "linuxserver/sonarr"
+    container_name: "sonarr"
+    volumes:
+      - ${USERDIR}/docker/sonarr:/config
+      - ${USERDIR}/stockage1/completed:/downloads
+      - ${USERDIR}/Series:/tv
+      - "/etc/localtime:/etc/localtime:ro"
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+        - "8989:8989"
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      
+  lidarr:
+    image: "linuxserver/lidarr"
+    container_name: "lidarr"
+    volumes:
+      - ${USERDIR}/docker/lidarr:/config
+      - ${USERDIR}/stockage1/completed:/downloads
+      - ${USERDIR}/stockage2/musique:/music
+      - "/etc/localtime:/etc/localtime:ro"
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+        - "8686:8686"
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}      
+      
+#Autour de PLEX
+  plexms:
+    container_name: plexms
+    restart: always
+    image: plexinc/pms-docker
+    volumes:
+      - ${USERDIR}/docker/plexms:/config
+      - ${USERDIR}/incomplete/Transcode:/transcode
+      - ${USERDIR}:/media
+      - ${USERDIR}/docker/shared:/shared
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+      - HOSTNAME="Serveur-Etoile"
+      - PLEX_CLAIM="claim-qMBsYNG4n1qVmpD2YbbU"
+      - PLEX_UID=${PUID}
+      - PLEX_GID=${PGID}
+      - ADVERTISE_IP="http://192.168.1.92:32400/"
+      
+  tautulli:
+    container_name: tautulli
+    restart: always
+    image: linuxserver/tautulli
+    volumes:
+      - ${USERDIR}/docker/tautulli/config:/config
+      - ${USERDIR}/docker/tautulli/logs:/logs:ro
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+      - "8181:8181"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ} 
+      
+  ombi:
+    container_name: ombi
+    restart: always
+    image: linuxserver/ombi
+    volumes:
+      - ${USERDIR}/docker/ombi:/config
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+      - "3579:3579"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}  
+
+      
+  organizr:
+    container_name: organizr
+    restart: always
+    image: lsiocommunity/organizr
+    volumes:
+      - ${USERDIR}/docker/organizr:/config
+      - ${USERDIR}/docker/shared:/shared
+    ports:
+      - "80:80"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
